@@ -204,6 +204,16 @@ netsnmp_ipv4_fmtaddr(const char *prefix, netsnmp_transport *t,
             snprintf(tmp, sizeof(tmp), "%s: unknown->[%s]:%hu", prefix,
                      inet_ntoa(addr_pair->local_addr.sin.sin_addr),
                      ntohs(addr_pair->local_addr.sin.sin_port));
+        } else if (t && t->flags & NETSNMP_TRANSPORT_FLAG_C) {
+            int flags = 0;
+            if (!(t->flags & NETSNMP_TRANSPORT_FLAG_HOSTNAME))
+                flags |= NI_NUMERICHOST;
+            int res = getnameinfo((struct sockaddr *)to, sizeof(struct sockaddr_in),
+                                   tmp, sizeof(tmp), NULL, 0, flags);
+            DEBUGMSGTL(("netsnmp_ipv4_fmtaddr",
+                        "flags=%d, res=%d, tmp=%s\n", flags, res, tmp));
+            if (res != 0)
+                return NULL;
         } else if ( t && t->flags & NETSNMP_TRANSPORT_FLAG_HOSTNAME ) {
             /* XXX: hmm...  why isn't this prefixed */
             /* assuming intentional */
