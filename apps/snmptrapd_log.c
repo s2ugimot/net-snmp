@@ -155,6 +155,8 @@ typedef enum {
     /* PDU information */
     CHR_PDU_IP = 'b',           /* PDU's IP address */
     CHR_PDU_NAME = 'B',         /* PDU's host name if available */
+    CHR_PDU_IP_C = 'c',         /* PDU's CLEAN IP address */
+    CHR_PDU_NAME_C = 'C',       /* PDU's CLEAN host name if available */
     CHR_PDU_ENT = 'N',          /* PDU's enterprise string */
     CHR_PDU_WRAP = 'P',         /* PDU's wrapper info (community, security) */
     CHR_TRAP_NUM = 'w',         /* trap number */
@@ -225,6 +227,8 @@ typedef enum {
       */
 
 #define is_pdu_ip_cmd(chr) ((((chr) == CHR_PDU_IP)   \
+			  || ((chr) == CHR_PDU_IP_C)  \
+			  || ((chr) == CHR_PDU_NAME_C)  \
 			  || ((chr) == CHR_PDU_NAME)) ? TRUE : FALSE)
 
      /*
@@ -670,12 +674,16 @@ realloc_handle_ip_fmt(u_char ** buf, size_t * buf_len, size_t * out_len,
         break;
 
     case CHR_PDU_IP:
+    case CHR_PDU_IP_C:
         /*
          * Write the numerical transport information.  
          */
         if (transport != NULL && transport->f_fmtaddr != NULL) {
             oflags = transport->flags;
             transport->flags &= ~NETSNMP_TRANSPORT_FLAG_HOSTNAME;
+            transport->flags &= ~NETSNMP_TRANSPORT_FLAG_C;
+            if (fmt_cmd == CHR_PDU_IP_C)
+                transport->flags |= NETSNMP_TRANSPORT_FLAG_C;
             tstr = transport->f_fmtaddr(transport, pdu->transport_data,
                                         pdu->transport_data_length);
             transport->flags = oflags;
@@ -699,6 +707,7 @@ noip:
         break;
 
     case CHR_PDU_NAME:
+    case CHR_PDU_NAME_C:
         /*
          * Try to convert the numerical transport information
          *  into a hostname.  Or rather, have the transport-specific
@@ -707,9 +716,12 @@ noip:
          */
         if (transport != NULL && transport->f_fmtaddr != NULL) {
             oflags = transport->flags;
+            transport->flags &= ~NETSNMP_TRANSPORT_FLAG_C;
             if (!netsnmp_ds_get_boolean(NETSNMP_DS_APPLICATION_ID, 
                                         NETSNMP_DS_APP_NUMERIC_IP))
                 transport->flags |= NETSNMP_TRANSPORT_FLAG_HOSTNAME;
+            if (fmt_cmd == CHR_PDU_NAME_C)
+                transport->flags |= NETSNMP_TRANSPORT_FLAG_C;
             tstr = transport->f_fmtaddr(transport, pdu->transport_data,
                                         pdu->transport_data_length);
             transport->flags = oflags;
