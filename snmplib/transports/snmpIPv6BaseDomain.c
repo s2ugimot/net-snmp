@@ -108,6 +108,11 @@ netsnmp_ipv6_fmtaddr(const char *prefix, netsnmp_transport *t,
             flags |= NI_NUMERICHOST;
         int res = getnameinfo((struct sockaddr *)to, sizeof(struct sockaddr_in6),
                                tmp, sizeof(tmp), NULL, 0, flags);
+        if (res == EAI_AGAIN) {
+            flags |= NI_NUMERICHOST;
+            res = getnameinfo((struct sockaddr *)to, sizeof(struct sockaddr_in6),
+                               tmp, sizeof(tmp), NULL, 0, flags);
+        }
         DEBUGMSGTL(("netsnmp_ipv6",
                     "flags=%d, res=%d, tmp=%s\n", flags, res, tmp));
         if (res != 0)
